@@ -11,12 +11,9 @@ public class ServerApp {
     private static final int PORT = 8888;
 
     public static void main(String[] args) {
-        System.out.println(">>> Запуск сервера...");
         try {
             DatabaseConnection.initSchema(); 
-            System.out.println(">>> База даних ініціалізована.");
         } catch (Exception e) {
-            System.err.println("!!! Помилка ініціалізації БД:");
             e.printStackTrace();
             return;
         }
@@ -31,12 +28,8 @@ public class ServerApp {
         PlaylistService playlistService = new PlaylistService(playlistRepo); 
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
-            System.out.println(">>> Сервер слухає порт " + PORT);
-            System.out.println(">>> Очікування клієнтів...");
-
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                System.out.println(">>> Нове підключення: " + clientSocket.getInetAddress());
                 ClientHandler handler = new ClientHandler(
                         clientSocket,
                         userService,
