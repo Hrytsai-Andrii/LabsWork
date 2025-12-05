@@ -310,6 +310,7 @@ public class MusicPlayerController {
 
             User user = systemFacade.authenticate(credentials.getKey(), credentials.getValue());
             if (user != null) {
+                musicPlayer.stop();
                 refreshData();
                 loadLastState();
             } else {
@@ -346,6 +347,7 @@ public class MusicPlayerController {
 
             User newUser = systemFacade.register(data[0], data[1], data[2]);
             if (newUser != null) {
+                musicPlayer.stop();
                 refreshData();
                 loadLastState();
             } else {
@@ -555,14 +557,11 @@ public class MusicPlayerController {
 
     private void loadLastState() {
         if (musicPlayer.getCurrentUser() == null) return;
-
-
         PlayerMemento savedState = systemFacade.loadState(musicPlayer.getCurrentUser().getUserID());
 
         if (savedState != null) {
             musicPlayer.restoreState(savedState);
             view.getVolumeSlider().setValue(savedState.getVolume());
-
 
             if (savedState.isShuffle()) view.getShuffleBtn().setStyle("-fx-base: #b6e7c9;");
             else view.getShuffleBtn().setStyle("");
@@ -570,8 +569,42 @@ public class MusicPlayerController {
             if (savedState.isRepeat()) view.getRepeatBtn().setStyle("-fx-base: #b6e7c9;");
             else view.getRepeatBtn().setStyle("");
 
+            List<Double> savedEq = savedState.getEqBands(); // Отримуємо збережені частоти
+            List<Slider> uiSliders = view.getEqSliders();   // Отримуємо слайдери з інтерфейсу
+
+            if (savedEq != null && !savedEq.isEmpty() && uiSliders.size() == savedEq.size()) {
+                for (int i = 0; i < uiSliders.size(); i++) {
+                    // Встановлюємо повзунок у збережену позицію
+                    uiSliders.get(i).setValue(savedEq.get(i));
+                }
+            }
+
             updateStatusUI();
+        } else {
+            resetPlayerToDefaults();
         }
+    }
+    private void resetPlayerToDefaults() {
+        // 1. Скидаємо гучність
+        musicPlayer.setVolume(50);
+        view.getVolumeSlider().setValue(50);
+
+        // 2. Скидаємо кнопки режимів
+        musicPlayer.setShuffle(false);
+        view.getShuffleBtn().setStyle("");
+
+        // Якщо repeat був увімкнений, вимикаємо (через toggle або напряму, якщо є сетер)
+        if (musicPlayer.isRepeat()) musicPlayer.toggleRepeat();
+        view.getRepeatBtn().setStyle("");
+
+        // 3. Скидаємо Еквалайзер (І логіку, і UI)
+        List<Slider> uiSliders = view.getEqSliders();
+        for (int i = 0; i < uiSliders.size(); i++) {
+            uiSliders.get(i).setValue(0.0); // Скидаємо UI в 0
+            musicPlayer.updateEqBand(i, 0.0); // Скидаємо логіку плеєра в 0
+        }
+
+        updateStatusUI();
     }
 
     private void saveCurrentUserState() {
