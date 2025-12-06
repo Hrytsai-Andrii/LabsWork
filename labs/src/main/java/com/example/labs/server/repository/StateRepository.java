@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 public class StateRepository {
 
     public void saveState(int userId, PlayerMemento memento) {
-        // Оновлений SQL-запит з новим полем eq_settings
         String sql = "INSERT OR REPLACE INTO playback_state (user_id, volume, is_shuffle, is_repeat, current_track_id, source_type, source_id, current_time, eq_settings) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.connect();
@@ -26,8 +25,6 @@ public class StateRepository {
             pstmt.setInt(7, memento.getSourceId());
             pstmt.setDouble(8, memento.getCurrentTime());
 
-            // --- СЕРІАЛІЗАЦІЯ ЕКВАЛАЙЗЕРА ---
-            // Перетворюємо List<Double> у рядок "0.5,1.2,-0.3"
             String eqStr = "";
             if (memento.getEqBands() != null && !memento.getEqBands().isEmpty()) {
                 eqStr = memento.getEqBands().stream()
@@ -35,7 +32,6 @@ public class StateRepository {
                         .collect(Collectors.joining(","));
             }
             pstmt.setString(9, eqStr);
-            // --------------------------------
 
             pstmt.executeUpdate();
         } catch (SQLException e) {
@@ -44,7 +40,6 @@ public class StateRepository {
     }
 
     public PlayerMemento loadState(int userId) {
-        // Оновлений SQL-запит для вибірки eq_settings
         String sql = "SELECT volume, is_shuffle, is_repeat, current_track_id, source_type, source_id, current_time, eq_settings FROM playback_state WHERE user_id = ?";
 
         try (Connection conn = DatabaseConnection.connect();
@@ -54,23 +49,18 @@ public class StateRepository {
             ResultSet rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                // --- ДЕСЕРІАЛІЗАЦІЯ ЕКВАЛАЙЗЕРА ---
                 List<Double> eqBands = new ArrayList<>();
                 String eqStr = rs.getString("eq_settings");
 
                 if (eqStr != null && !eqStr.isEmpty()) {
-                    // Розбиваємо рядок по комі і парсимо числа
                     for (String val : eqStr.split(",")) {
                         try {
                             eqBands.add(Double.parseDouble(val));
                         } catch (NumberFormatException e) {
-                            // Якщо дані пошкоджені, додаємо 0.0 як безпечне значення
                             eqBands.add(0.0);
                         }
                     }
                 }
-                // ----------------------------------
-
                 return new PlayerMemento(
                         rs.getInt("volume"),
                         rs.getBoolean("is_shuffle"),
@@ -79,7 +69,7 @@ public class StateRepository {
                         rs.getInt("source_type"),
                         rs.getInt("source_id"),
                         rs.getDouble("current_time"),
-                        eqBands // Передаємо відновлений список
+                        eqBands
                 );
             }
         } catch (SQLException e) {

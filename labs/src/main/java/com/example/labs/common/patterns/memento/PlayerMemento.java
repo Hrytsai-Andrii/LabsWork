@@ -17,7 +17,7 @@ public class PlayerMemento implements Serializable {
 
     public PlayerMemento(int volume, boolean isShuffle, boolean isRepeat,
                          int currentTrackId, int sourceType, int sourceId,
-                         double currentTime, List<Double> eqBands) { // Оновлений конструктор
+                         double currentTime, List<Double> eqBands) {
         this.volume = volume;
         this.isShuffle = isShuffle;
         this.isRepeat = isRepeat;
